@@ -34,7 +34,9 @@ library
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      base >=4.7 && <5,
+      aeson >=1.5,
+      text >=1.2
   default-language: Haskell2010
 
 executable backend-exe
@@ -48,7 +50,13 @@ executable backend-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       backend
-    , base >=4.7 && <5
+        , base >=4.7 && <5
+        , servant >=0.18
+        , servant-server >=0.18
+        , warp >=3.3
+        , aeson >=1.5
+        , text >=1.2
+        , bytestring
   default-language: Haskell2010
 
 test-suite backend-test
