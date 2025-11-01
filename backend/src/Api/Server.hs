@@ -13,6 +13,7 @@ module Api.Server
   ) where
 
 import Servant
+import Control.Monad.IO.Class (liftIO)
 import Network.Wai (Application)
 import Network.Wai.Handler.Warp (run)
 import Control.Concurrent.MVar

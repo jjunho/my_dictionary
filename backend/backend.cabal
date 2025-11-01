@@ -38,7 +38,11 @@ library
   build-depends:
       base >=4.7 && <5,
       aeson >=1.5,
-      text >=1.2
+      text >=1.2,
+      servant >=0.18,
+      servant-server >=0.18,
+      wai >=3.2,
+      warp >=3.3
   default-language: Haskell2010
 
 executable backend-exe
@@ -66,6 +70,7 @@ test-suite backend-test
   main-is: Spec.hs
   other-modules:
       Paths_backend
+      ServerSpec
   autogen-modules:
       Paths_backend
   hs-source-dirs:
@@ -79,4 +84,7 @@ test-suite backend-test
       aeson >=1.5,
       text >=1.2,
       bytestring
+      , wai >=3.2
+      , wai-extra
+      , http-types
   default-language: Haskell2010
