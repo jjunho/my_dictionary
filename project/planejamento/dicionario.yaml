@@ -1,0 +1,989 @@
+openapi: 3.1.0
+info:
+  title: Linguistic Dictionary API
+  description: |
+    Programmatic access to a collaborative, auditable dictionary for linguistic description.
+    Emphasizes phonology, morphology, syntax, sociolinguistics, and revision history.
+  version: "1.0.0"
+  contact:
+    name: API Support
+    url: https://docs.example.com
+    email: api-support@example.com
+servers:
+  - url: /api/v1
+    description: Primary API (versioned by URL)
+  - url: /
+    description: Root (use with Accept: application/vnd.ldp.v1+json)
+externalDocs:
+  description: Full documentation
+  url: https://docs.example.com/lingdict
+
+security:
+  - OAuth2: [read:dictionary]
+
+tags:
+  - name: Lexemes
+  - name: Senses
+  - name: Paradigms
+  - name: Examples
+  - name: Media
+  - name: Search
+  - name: Revisions
+  - name: Admin
+  - name: Operations
+
+paths:
+  /lexemes:
+    get:
+      tags: [Lexemes]
+      summary: List lexemes
+      operationId: listLexemes
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/LanguageCode'
+        - name: pos
+          in: query
+          schema: { type: string }
+          description: Part of speech (controlled vocabulary)
+        - name: tag
+          in: query
+          schema: { type: string }
+        - name: has
+          in: query
+          schema:
+            type: string
+            enum: [audio, paradigm]
+        - name: sort
+          in: query
+          schema: { type: string, enum: [created_at, updated_at] }
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag: { description: Entity tag of the page payload, schema: { type: string } }
+            X-RateLimit-Limit: { $ref: '#/components/headers/RateLimit-Limit' }
+            X-RateLimit-Remaining: { $ref: '#/components/headers/RateLimit-Remaining' }
+            X-RateLimit-Reset: { $ref: '#/components/headers/RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Lexeme' }
+                  page: { $ref: '#/components/schemas/CursorPage' }
+    post:
+      tags: [Lexemes]
+      summary: Create lexeme
+      operationId: createLexeme
+      security: [{ OAuth2: [write:lexemes] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LexemeCreate' }
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag: { description: Entity tag, schema: { type: string } }
+            Location: { description: Resource URL, schema: { type: string, format: uri } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Lexeme' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /lexemes/{lexemeId}:
+    parameters:
+      - $ref: '#/components/parameters/LexemeId'
+    get:
+      tags: [Lexemes]
+      summary: Get lexeme
+      operationId: getLexeme
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag: { description: Entity tag, schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Lexeme' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Lexemes]
+      summary: Update lexeme (partial)
+      operationId: patchLexeme
+      security: [{ OAuth2: [write:lexemes] }]
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Partial update payload
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag: { description: New entity tag, schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Lexeme' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Lexemes]
+      summary: Delete lexeme (soft delete)
+      operationId: deleteLexeme
+      security: [{ OAuth2: [write:lexemes] }]
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+
+  /lexemes:bulk-import:
+    post:
+      tags: [Operations]
+      summary: Bulk import lexemes (NDJSON)
+      operationId: bulkImportLexemes
+      security: [{ OAuth2: [write:lexemes] }]
+      requestBody:
+        required: true
+        content:
+          application/x-ndjson:
+            schema:
+              type: string
+              description: NDJSON stream of LexemeCreate objects (one per line)
+      responses:
+        '202':
+          description: Accepted. Operation running.
+          headers:
+            Operation-Location: { description: URL to poll, schema: { type: string, format: uri } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /lexemes:export.ndjson:
+    get:
+      tags: [Operations]
+      summary: Export lexemes as NDJSON
+      operationId: exportLexemes
+      parameters:
+        - $ref: '#/components/parameters/LanguageCode'
+      responses:
+        '200':
+          description: NDJSON stream
+          content:
+            application/x-ndjson:
+              schema: { type: string }
+
+  /lexemes/{lexemeId}/senses:
+    parameters:
+      - $ref: '#/components/parameters/LexemeId'
+    get:
+      tags: [Senses]
+      summary: List senses for a lexeme
+      operationId: listSenses
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Sense' }
+                  page: { $ref: '#/components/schemas/CursorPage' }
+    post:
+      tags: [Senses]
+      summary: Create sense for a lexeme
+      operationId: createSense
+      security: [{ OAuth2: [write:lexemes] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SenseCreate' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Sense' }
+
+  /senses/{senseId}:
+    parameters:
+      - name: senseId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Senses]
+      summary: Get a sense
+      operationId: getSense
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Sense' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Senses]
+      summary: Update a sense (partial)
+      operationId: patchSense
+      security: [{ OAuth2: [write:lexemes] }]
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/Sense' } } } }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Senses]
+      summary: Delete a sense
+      operationId: deleteSense
+      security: [{ OAuth2: [write:lexemes] }]
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+
+  /lexemes/{lexemeId}/paradigms:
+    parameters:
+      - $ref: '#/components/parameters/LexemeId'
+    get:
+      tags: [Paradigms]
+      summary: List paradigms for a lexeme
+      operationId: listParadigms
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Paradigm' }
+    post:
+      tags: [Paradigms]
+      summary: Create a paradigm for a lexeme
+      operationId: createParadigm
+      security: [{ OAuth2: [write:lexemes] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ParadigmCreate' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Paradigm' } } } }
+
+  /paradigms/{paradigmId}:
+    parameters:
+      - name: paradigmId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Paradigms]
+      summary: Get a paradigm
+      operationId: getParadigm
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Paradigm' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Paradigms]
+      summary: Update a paradigm (partial)
+      operationId: patchParadigm
+      security: [{ OAuth2: [write:lexemes] }]
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/Paradigm' } } } }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Paradigms]
+      summary: Delete a paradigm
+      operationId: deleteParadigm
+      security: [{ OAuth2: [write:lexemes] }]
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '204': { description: No Content }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '412': { $ref: '#/components/responses/PreconditionFailed' }
+
+  /lexemes/{lexemeId}/examples:
+    parameters:
+      - $ref: '#/components/parameters/LexemeId'
+    post:
+      tags: [Examples]
+      summary: Create example for a lexeme (IGT supported)
+      operationId: createExample
+      security: [{ OAuth2: [write:lexemes] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExampleCreate' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Example' } } } }
+
+  /lexemes/{lexemeId}/audio:
+    parameters:
+      - $ref: '#/components/parameters/LexemeId'
+    post:
+      tags: [Media]
+      summary: Upload audio for lexeme pronunciation
+      operationId: uploadLexemeAudio
+      security: [{ OAuth2: [write:media] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, dialect, speaker_id]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                dialect:
+                  type: string
+                speaker_id:
+                  type: string
+                variant:
+                  type: string
+                  enum: [raw, denoised]
+            encoding:
+              file: { contentType: audio/* }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MediaAudio' }
+
+  /lexemes/{lexemeId}/revisions:
+    parameters:
+      - $ref: '#/components/parameters/LexemeId'
+    get:
+      tags: [Revisions]
+      summary: List revisions for a lexeme
+      operationId: listLexemeRevisions
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Revision' }
+                  page: { $ref: '#/components/schemas/CursorPage' }
+
+  /lexemes/{lexemeId}/revisions/{revId}:
+    parameters:
+      - $ref: '#/components/parameters/LexemeId'
+      - name: revId
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      tags: [Revisions]
+      summary: Get state of a lexeme at a revision
+      operationId: getLexemeAtRevision
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Lexeme' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /lexemes/{lexemeId}/diff:
+    get:
+      tags: [Revisions]
+      summary: Diff two revisions of a lexeme
+      operationId: diffLexeme
+      parameters:
+        - $ref: '#/components/parameters/LexemeId'
+        - name: from
+          in: query
+          required: true
+          schema: { type: string }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  changes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        path: { type: string }
+                        op: { type: string, enum: [add, remove, replace] }
+                        before: {}
+                        after: {}
+
+  /lexemes/{lexemeId}:restore:
+    post:
+      tags: [Revisions]
+      summary: Restore a lexeme (from deletion or specific revision)
+      operationId: restoreLexeme
+      security: [{ OAuth2: [write:lexemes] }]
+      parameters:
+        - $ref: '#/components/parameters/LexemeId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rev_id: { type: string, nullable: true }
+      responses:
+        '200': { description: Restored, content: { application/json: { schema: { $ref: '#/components/schemas/Lexeme' } } } }
+
+  /search:
+    get:
+      tags: [Search]
+      summary: Full-text search with DSL
+      operationId: search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+          description: |
+            Query string supporting prefixes and filters, e.g.
+            `lemma:sul* sense:def~sun morph_gloss:NOM.SG has:audio pos:noun dialect:Northern`
+        - name: in
+          in: query
+          schema: { type: string }
+          description: Comma-separated fields to search
+        - $ref: '#/components/parameters/LanguageCode'
+        - name: f
+          in: query
+          schema: { type: string }
+          description: Additional filters, comma-separated (e.g., `pos:noun,has:audio`)
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Lexeme' }
+                  page: { $ref: '#/components/schemas/CursorPage' }
+
+  /autocomplete:
+    get:
+      tags: [Search]
+      summary: Autocomplete suggestions for a field
+      operationId: autocomplete
+      parameters:
+        - name: field
+          in: query
+          required: true
+          schema: { type: string, enum: [lemma, morph_gloss, definition] }
+        - name: prefix
+          in: query
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/LanguageCode'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suggestions:
+                    type: array
+                    items: { type: string }
+
+  /suggest:
+    get:
+      tags: [Search]
+      summary: Suggest related forms/variants for a lemma
+      operationId: suggest
+      parameters:
+        - name: lemma
+          in: query
+          required: true
+          schema: { type: string }
+        - $ref: '#/components/parameters/LanguageCode'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  related:
+                    type: array
+                    items: { type: string }
+
+  /admin/tags:
+    get:
+      tags: [Admin]
+      summary: List tags
+      operationId: listTags
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Tag' } } } } }
+    post:
+      tags: [Admin]
+      summary: Create tag
+      operationId: createTag
+      security: [{ OAuth2: [admin:tags] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TagCreate' }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Tag' } } } }
+
+  /admin/tags/{tagId}:
+    parameters:
+      - name: tagId
+        in: path
+        required: true
+        schema: { type: string }
+    patch:
+      tags: [Admin]
+      summary: Update tag
+      operationId: patchTag
+      security: [{ OAuth2: [admin:tags] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/Tag' } } } }
+    delete:
+      tags: [Admin]
+      summary: Delete tag
+      operationId: deleteTag
+      security: [{ OAuth2: [admin:tags] }]
+      responses:
+        '204': { description: No Content }
+
+  /admin/metrics:
+    get:
+      tags: [Admin]
+      summary: Metrics
+      operationId: metrics
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  corpus_size: { type: integer }
+                  audio_bytes: { type: integer }
+                  avg_latency_ms: { type: number }
+
+components:
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.example.com/authorize
+          tokenUrl: https://auth.example.com/token
+          scopes:
+            read:dictionary: Read dictionary data
+            write:lexemes: Create and modify lexemes/senses/paradigms
+            write:media: Upload media
+            admin:tags: Manage controlled vocabularies
+    ApiKey:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Use as `Authorization: Bearer <token>` for server-to-server
+
+  headers:
+    RateLimit-Limit:
+      description: Max requests per window
+      schema: { type: integer }
+    RateLimit-Remaining:
+      description: Remaining requests in window
+      schema: { type: integer }
+    RateLimit-Reset:
+      description: UTC epoch seconds when limit resets
+      schema: { type: integer, format: int64 }
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema: { type: string, nullable: true }
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+    LanguageCode:
+      name: language_code
+      in: query
+      required: false
+      schema: { type: string }
+      description: IETF BCP-47 code
+    LexemeId:
+      name: lexemeId
+      in: path
+      required: true
+      schema: { type: string }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema: { type: string }
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ErrorProblem' }
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ErrorProblem' }
+    Forbidden:
+      description: Forbidden
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ErrorProblem' }
+    NotFound:
+      description: Not found
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ErrorProblem' }
+    PreconditionFailed:
+      description: Precondition failed (ETag mismatch)
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ErrorProblem' }
+
+  schemas:
+    CursorPage:
+      type: object
+      properties:
+        next_cursor: { type: string, nullable: true }
+        prev_cursor: { type: string, nullable: true }
+        limit: { type: integer }
+
+    LanguageRef:
+      type: object
+      required: [language_code]
+      properties:
+        language_code: { type: string, description: BCP-47 code }
+        glottocode: { type: string, nullable: true }
+
+    Lexeme:
+      type: object
+      required: [id, lemma, language, part_of_speech]
+      properties:
+        id: { type: string, readOnly: true }
+        lemma: { type: string }
+        part_of_speech: { type: string }
+        language:
+          $ref: '#/components/schemas/LanguageRef'
+        orthography:
+          type: object
+          properties:
+            primary: { type: string }
+            alternates: { type: array, items: { type: string } }
+            unicode_normalization: { type: string, enum: [NFC, NFD], default: NFC }
+            orthography_tag: { type: string, description: Script/variant tag }
+        phonology:
+          type: object
+          properties:
+            phonemic_ipa: { type: string, pattern: '^/.+/$' }
+            phonetic_ipa: { type: string, pattern: '^\[.+\]$' }
+            syllabification: { type: string }
+            stress:
+              type: object
+              properties:
+                pattern: { type: string, description: e.g., '10' }
+                primary_index: { type: integer, nullable: true }
+            tone: { type: string, nullable: true }
+            audio:
+              type: array
+              items: { $ref: '#/components/schemas/MediaAudio' }
+        morphology:
+          type: object
+          properties:
+            morphemes:
+              type: array
+              items:
+                type: object
+                properties:
+                  text: { type: string }
+                  gloss: { type: string }
+                  type: { type: string, enum: [root, prefix, suffix, infix, circumfix, clitic, other] }
+            word_formation:
+              type: object
+              properties:
+                process: { type: string }
+                notes: { type: string }
+            paradigm_ids: { type: array, items: { type: string } }
+        senses:
+          type: array
+          items: { $ref: '#/components/schemas/Sense' }
+        etymology:
+          type: object
+          properties:
+            text: { type: string }
+            source_language: { type: string }
+        tags: { type: array, items: { type: string } }
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              type: { type: string, enum: [informant, corpus_text, reference, other] }
+              reference: { type: string }
+              license: { type: string, nullable: true }
+        custom_fields: { type: object, additionalProperties: true }
+        metadata:
+          type: object
+          properties:
+            project_id: { type: string, nullable: true }
+            created_at: { type: string, format: date-time, readOnly: true }
+            updated_at: { type: string, format: date-time, readOnly: true }
+            latest_revision_id: { type: string, readOnly: true }
+            deleted_at: { type: string, format: date-time, nullable: true, readOnly: true }
+
+    LexemeCreate:
+      type: object
+      required: [lemma, language]
+      properties:
+        lemma: { type: string }
+        part_of_speech: { type: string }
+        language: { $ref: '#/components/schemas/LanguageRef' }
+        orthography: { $ref: '#/components/schemas/Lexeme/properties/orthography' }
+        phonology: { $ref: '#/components/schemas/Lexeme/properties/phonology' }
+        morphology: { $ref: '#/components/schemas/Lexeme/properties/morphology' }
+        senses: { type: array, items: { $ref: '#/components/schemas/SenseCreate' } }
+        etymology: { $ref: '#/components/schemas/Lexeme/properties/etymology' }
+        tags: { type: array, items: { type: string } }
+        custom_fields: { type: object }
+
+    Sense:
+      type: object
+      required: [id, definition]
+      properties:
+        id: { type: string, readOnly: true }
+        definition: { type: string }
+        gloss: { type: string, nullable: true }
+        semantic_domain: { type: array, items: { type: string } }
+        examples:
+          type: array
+          items: { $ref: '#/components/schemas/Example' }
+        relations:
+          type: object
+          properties:
+            synonyms: { type: array, items: { type: string } }
+            antonyms: { type: array, items: { type: string } }
+            hypernyms: { type: array, items: { type: string } }
+            meronyms: { type: array, items: { type: string } }
+        syntax:
+          type: object
+          properties:
+            valency: { type: string }
+            arguments:
+              type: array
+              items:
+                type: object
+                properties:
+                  role: { type: string }
+                  realization: { type: string }
+            frame: { type: string }
+        sociolinguistics:
+          type: object
+          properties:
+            register: { type: string }
+            connotation: { type: string }
+            dialect: { type: string }
+        usage_notes: { type: string, nullable: true }
+
+    SenseCreate:
+      type: object
+      required: [definition]
+      properties:
+        definition: { type: string }
+        gloss: { type: string, nullable: true }
+        semantic_domain: { type: array, items: { type: string } }
+        examples: { type: array, items: { $ref: '#/components/schemas/ExampleCreate' } }
+        relations: { $ref: '#/components/schemas/Sense/properties/relations' }
+        syntax: { $ref: '#/components/schemas/Sense/properties/syntax' }
+        sociolinguistics: { $ref: '#/components/schemas/Sense/properties/sociolinguistics' }
+        usage_notes: { type: string, nullable: true }
+
+    Paradigm:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, readOnly: true }
+        lexeme_id: { type: string }
+        language: { $ref: '#/components/schemas/LanguageRef' }
+        name: { type: string }
+        feature_system: { type: string, description: 'e.g., UD/Feat' }
+        features: { type: array, items: { type: string } }
+        inflected_forms:
+          type: array
+          items:
+            type: object
+            required: [form, features]
+            properties:
+              form: { type: string }
+              features: { type: object, additionalProperties: { type: string } }
+              phonemic_ipa: { type: string }
+              gloss: { type: string }
+        metadata:
+          type: object
+          properties:
+            created_at: { type: string, format: date-time }
+            updated_at: { type: string, format: date-time }
+
+    ParadigmCreate:
+      type: object
+      required: [name, language]
+      properties:
+        lexeme_id: { type: string }
+        language: { $ref: '#/components/schemas/LanguageRef' }
+        name: { type: string }
+        feature_system: { type: string }
+        features: { type: array, items: { type: string } }
+        inflected_forms: { $ref: '#/components/schemas/Paradigm/properties/inflected_forms' }
+
+    Example:
+      type: object
+      required: [id, sentence]
+      properties:
+        id: { type: string, readOnly: true }
+        sentence: { type: string }
+        morph_break: { type: string, nullable: true }
+        morph_gloss: { type: string, nullable: true }
+        translation: { type: string }
+
+    ExampleCreate:
+      type: object
+      required: [sentence]
+      properties:
+        sentence: { type: string }
+        morph_break: { type: string, nullable: true }
+        morph_gloss: { type: string, nullable: true }
+        translation: { type: string }
+
+    MediaAudio:
+      type: object
+      required: [id, url, mime, duration_ms, sample_rate_hz, channels, size_bytes, sha256]
+      properties:
+        id: { type: string, readOnly: true }
+        dialect: { type: string }
+        speaker_id: { type: string }
+        url: { type: string, format: uri }
+        mime: { type: string }
+        duration_ms: { type: integer }
+        sample_rate_hz: { type: integer }
+        channels: { type: integer }
+        size_bytes: { type: integer }
+        sha256: { type: string }
+        variant: { type: string, enum: [raw, denoised], nullable: true }
+
+    Revision:
+      type: object
+      required: [id, actor_id, created_at]
+      properties:
+        id: { type: string }
+        actor_id: { type: string }
+        reason: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        diff:
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: string }
+              op: { type: string, enum: [add, remove, replace] }
+              before: {}
+              after: {}
+
+    Tag:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string, nullable: true }
+
+    TagCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        description: { type: string, nullable: true }
+
+    ErrorProblem:
+      type: object
+      description: RFC 7807 problem+json
+      required: [title, status]
+      properties:
+        type: { type: string, format: uri, nullable: true }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string, nullable: true }
+        instance: { type: string, nullable: true }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              path: { type: string }
+              code: { type: string }
+              message: { type: string }
