@@ -1,21 +1,170 @@
-# Top-level ignores
+# =========================
+# OS & EDITORES
+# =========================
+.DS_Store
+*~
 
-# Node / frontend
+# =========================
+# LOGS & RELATÓRIOS
+# =========================
+*.log
+logs
+lerna-debug.log*
+npm-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# DADOS DE EXECUÇÃO
+# =========================
+*.pid
+*.pid.lock
+*.seed
+pids
+
+# =========================
+# NODE / FRONTEND (GENÉRICO)
+# =========================
 node_modules/
 dist/
+dist-*
+build/Release
+.cache
+.parcel-cache
+.vite/
+.nyc_output
+.eslintcache
+.stylelintcache
+.node_repl_history
+.yarn-integrity
+.pnp.*
+.pnp.loader.mjs
 
-# Editor temporary files
-*~
-.DS_Store
+# Saída de 'npm pack'
+*.tgz
 
-# Haskell build artifacts
+# Caches opcionais
+.npm
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# =========================
+# DEPENDÊNCIAS/GERENCIADORES
+# =========================
+bower_components
+jspm_packages/
+web_modules/            # Snowpack
+.lock-wscript           # node-waf
+
+# =========================
+# FERRAMENTAS / FRAMEWORKS WEB
+# =========================
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Next.js
+.next
+out
+
+# Nuxt
+.nuxt
+.output
+
+# Gatsby
+# .cache/        # (já coberto por .cache)
+# public         # descomente se não versionar 'public'
+
+# VuePress
+.vuepress/dist
+.temp
+
+# VitePress
+**/.vitepress/dist
+**/.vitepress/cache
+
+# SvelteKit
+.svelte-kit/
+
+# Docusaurus
+.docusaurus
+
+# Serverless
+.serverless/
+
+# Firebase
+.firebase/
+
+# FuseBox
+.fusebox/
+
+# DynamoDB Local
+.dynamodb/
+
+# TernJS
+.tern-port
+
+# VSCode (test runner)
+.vscode-test
+
+# Yarn 3 (Plug'n'Play)
+# Já coberto acima: .pnp.*, .yarn/* (com exceções mantidas)
+
+# =========================
+# TYPESCRIPT
+# =========================
+*.tsbuildinfo
+
+# =========================
+# AMBIENTES (.env)
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# ELM
+# =========================
+elm-stuff
+repl-temp-*
+
+# =========================
+# HASKELL
+# =========================
+# Cabal / Stack / GHC
 **/dist-newstyle/
 **/.stack-work/
+.HTF/
+.hpc
+.hsenv
+.cabal-sandbox/
+cabal.sandbox.config
+cabal.project.local
+cabal.project.local~
+.ghc.environment.*
 **/.ghc.environment.*
-**/*.hi
-**/*.o
-**/*.dyn_o
-**/*.dyn_hi
 
-# Hooks dir (should be tracked but safe)
+# Artefatos de build
+*.o
+*.hi
+*.hie
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+
+# Perf / traces
+*.prof
+*.hp
+*.eventlog
+
+# =========================
+# DIVERSOS
+# =========================
+# Hooks locais (mantenha versionado se quiser)
 # .githooks/
