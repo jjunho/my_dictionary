@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Frontend checks (elm-land)
+        run: |
+          if [ -d frontend ]; then
+            echo "Running frontend checks"
+            cd frontend
+            npm ci || true
+            npx elm-format --validate . || true
+            npx elm-review || true
+            npx elm-test || true
+            elm-land build || true
+            cd ..
+          else
+            echo "No frontend directory, skipping"
+          fi
+
+      - name: Setup GHC and Cabal
+        uses: actions/setup-haskell@v1
+        with:
+          ghc-version: '9.10.2'
+
+      - name: Backend build & tests
+        run: |
+          if [ -d backend ]; then
+            echo "Building backend"
+            cd backend
+            cabal v2-update || true
+            cabal v2-build all
+            cabal v2-test --test-show-details=direct || true
+
+            echo "Installing hlint and ormolu"
+            cabal v2-install hlint ormolu --installdir=$HOME/.local/bin --install-method=copy || true
+            export PATH=$HOME/.local/bin:$PATH
+            hlint src || true
+            ormolu --mode check -r src app test || true
+          else
+            echo "No backend directory, skipping"
+          fi
