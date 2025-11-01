@@ -25,8 +25,9 @@ source-repository head
 
 library
   exposed-modules:
-    Lib
-    Api.Types
+      Lib
+      Api.Types
+      Api.Server
   other-modules:
       Paths_backend
   autogen-modules:
