@@ -1,36 +1,47 @@
-# Dicionário Linguístico
+# Dicionário Linguístico — instruções rápidas
 
-Este projeto é um dicionário colaborativo para descrição de uma língua não documentada.
+Este repositório contém:
 
-## Estrutura
+- `frontend/` — código do frontend em Elm (projeto gerado por Elm Land)
+- `backend/` — código do backend em Haskell (hpack/cabal)
+- `project/` — documentação e planejamento (API, UX, schemas)
 
-- `frontend/` - Código do frontend em Elm (elm-land 0.20.1)
-- `backend/` - Código do backend em Haskell (cabal, GHC 9.10.2)
-- `project/` - Documentação e planejamento do projeto
+Requisitos básicos
 
-## Setup
+- Node.js (para ferramentas do frontend/elm-land)
+- elm-land v0.20.1 (instalado globalmente ou via npx)
+- ghcup (recomendado) + GHC 9.10.2 + cabal-install (para Haskell)
 
-### Dependências
+Rodando o frontend (Elm Land)
 
-- Elm 0.19.1
-- Elm Land 0.20.1
-- Haskell com ghcup (GHC 9.10.2) e cabal
-
-### Frontend
-
-```bash
+```zsh
 cd frontend
+# se tiver elm-land global
 elm-land server
+# ou com npx (quando não instalado globalmente)
+npx elm-land server
 ```
 
-### Backend
+Rodando o backend (cabal)
 
-```bash
+```zsh
 cd backend
-cabal build
-cabal run linguistic-dictionary-backend
+# compilar
+cabal v2-build all
+# executar (nome do executável conforme backend/backend.cabal)
+cabal v2-run backend-exe
 ```
 
-## Documentação
+Alternativa (Stack)
 
-Ver `project/` para detalhes da API, UI e estratégias de programação.
+```zsh
+cd backend
+stack setup
+stack build
+stack run
+```
+
+Notas
+
+- A documentação da API, esquemas e UX estão em `project/`.
+- Se houver problemas de toolchain Haskell, instale GHC/cabal via `ghcup`.
