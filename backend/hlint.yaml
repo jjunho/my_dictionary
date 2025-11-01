@@ -1,0 +1,5 @@
+# hlint rules for the backend
+warn: {lhs: "Use camelCase for functions", rhs: ""}
+
+# Add project-specific hints here. Example:
+# - ignore: {name: "Use String"}
