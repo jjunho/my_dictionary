@@ -45,3 +45,16 @@ Notas
 
 - A documentação da API, esquemas e UX estão em `project/`.
 - Se houver problemas de toolchain Haskell, instale GHC/cabal via `ghcup`.
+ 
+Git hooks
+
+This repository includes a lightweight hooks directory at `.githooks/` containing a `pre-commit` script that runs a few fast checks (elm-format validation, `hlint` on `backend/`, and a quick `cabal` dependency build).
+
+To enable these hooks locally for your clone run:
+
+```zsh
+# from repo root
+git config core.hooksPath .githooks
+```
+
+Make sure you have `elm-format`, `hlint`, and `cabal` installed for the checks to run. The hook is intentionally conservative (it skips checks if tools are missing).

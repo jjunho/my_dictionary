@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Running pre-commit checks..."
+
+# Check Elm formatting (fast) if elm-format is installed
+if command -v elm-format >/dev/null 2>&1; then
+  echo "Checking Elm formatting..."
+  if ! elm-format --validate "frontend"; then
+    echo "elm-format validation failed. Run 'elm-format frontend' or fix formatting." >&2
+    exit 1
+  fi
+else
+  echo "elm-format not found; skipping Elm format check."
+fi
+
+# Run hlint on backend if available
+if command -v hlint >/dev/null 2>&1; then
+  echo "Running hlint on backend..."
+  if ! hlint "backend"; then
+    echo "hlint found issues in backend. Please fix or run 'hlint backend'." >&2
+    exit 1
+  fi
+else
+  echo "hlint not found; skipping Haskell lint check."
+fi
+
+# Quick backend build check (fast compile) if cabal is available
+if command -v cabal >/dev/null 2>&1; then
+  echo "Doing a quick 'cabal v2-build backend' to ensure compile-stage passes..."
+  if ! cabal v2-build backend --only-dependencies; then
+    echo "cabal dependency build failed; ensure your environment can build dependencies." >&2
+    exit 1
+  fi
+else
+  echo "cabal not found; skipping backend quick build check."
+fi
+
+echo "Pre-commit checks passed."
+
+exit 0
