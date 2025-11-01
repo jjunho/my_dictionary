@@ -1,2 +1,18 @@
 .stack-work/
 *~
+dist-newstyle/
+# Cabal/build artifacts
+*.hi
+*.o
+*.dyn_o
+*.dyn_hi
+/.cabal-sandbox/
+
+# Local cabal store
+.cabal-sandbox.config
+
+# GHC environment
+.ghc.environment.*
+
+# nix
+/result

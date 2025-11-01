@@ -1,0 +1,21 @@
+# Top-level ignores
+
+# Node / frontend
+node_modules/
+dist/
+
+# Editor temporary files
+*~
+.DS_Store
+
+# Haskell build artifacts
+**/dist-newstyle/
+**/.stack-work/
+**/.ghc.environment.*
+**/*.hi
+**/*.o
+**/*.dyn_o
+**/*.dyn_hi
+
+# Hooks dir (should be tracked but safe)
+# .githooks/
