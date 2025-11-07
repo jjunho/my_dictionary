@@ -18,40 +18,63 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install Elm
+        run: |
+          curl -L -o elm.gz https://github.com/elm/compiler/releases/download/0.19.1/binary-for-linux-64-bit.gz
+          gunzip elm.gz
+          chmod +x elm
+          sudo mv elm /usr/local/bin/
+          elm --version
+
       - name: Frontend checks (elm-land)
         run: |
           if [ -d frontend ]; then
             echo "Running frontend checks"
             cd frontend
-            npm ci || true
-            npx elm-format --validate . || true
-            npx elm-review || true
-            npx elm-test || true
-            elm-land build || true
+            npx --yes elm-land build
             cd ..
           else
             echo "No frontend directory, skipping"
           fi
 
       - name: Setup GHC and Cabal
-        uses: actions/setup-haskell@v1
+        uses: haskell-actions/setup@v2
         with:
-          ghc-version: '9.10.2'
+          ghc-version: '9.10.1'
+          cabal-version: '3.10.2.0'
+
+      - name: Cache Cabal packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cabal/packages
+            ~/.cabal/store
+            backend/dist-newstyle
+          key: ${{ runner.os }}-cabal-${{ hashFiles('backend/**/*.cabal', 'backend/cabal.project') }}
+          restore-keys: |
+            ${{ runner.os }}-cabal-
 
       - name: Backend build & tests
         run: |
           if [ -d backend ]; then
             echo "Building backend"
             cd backend
-            cabal v2-update || true
+            cabal v2-update
             cabal v2-build all
-            cabal v2-test --test-show-details=direct || true
+            cabal v2-test --test-show-details=direct
+            cd ..
+          else
+            echo "No backend directory, skipping"
+          fi
 
+      - name: Backend linting (optional)
+        run: |
+          if [ -d backend ]; then
             echo "Installing hlint and ormolu"
             cabal v2-install hlint ormolu --installdir=$HOME/.local/bin --install-method=copy || true
             export PATH=$HOME/.local/bin:$PATH
-            hlint src || true
-            ormolu --mode check -r src app test || true
+            hlint backend/src || true
+            ormolu --mode check -r backend/src backend/app backend/test || true
           else
             echo "No backend directory, skipping"
           fi
