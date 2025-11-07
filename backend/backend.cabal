@@ -72,6 +72,7 @@ test-suite backend-test
   other-modules:
       Paths_backend
       ServerSpec
+      SenseSpec
   autogen-modules:
       Paths_backend
   hs-source-dirs:

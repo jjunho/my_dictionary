@@ -12,6 +12,9 @@ module Api.Types
   , Etymology(..)
   , Source(..)
   , Metadata(..)
+  , Sense(..)
+  , Example(..)
+  , Relations(..)
   ) where
 
 import GHC.Generics (Generic)
@@ -136,3 +139,75 @@ data Lexeme = Lexeme
 
 instance ToJSON Lexeme
 instance FromJSON Lexeme
+
+-- Example in IGT format
+data Example = Example
+  { example_id :: Text
+  , sentence :: Text
+  , morph_break :: Maybe Text
+  , morph_gloss :: Maybe Text
+  , translation :: Text
+  } deriving (Show, Eq, Generic)
+
+instance ToJSON Example where
+  toJSON (Example eid sent mb mg trans) = object
+    [ "id" .= eid
+    , "sentence" .= sent
+    , "morph_break" .= mb
+    , "morph_gloss" .= mg
+    , "translation" .= trans
+    ]
+
+instance FromJSON Example where
+  parseJSON = withObject "Example" $ \v -> Example
+    <$> v .: "id"
+    <*> v .: "sentence"
+    <*> v .:? "morph_break"
+    <*> v .:? "morph_gloss"
+    <*> v .: "translation"
+
+-- Sense relations
+data Relations = Relations
+  { synonyms :: Maybe [Text]
+  , antonyms :: Maybe [Text]
+  , hypernyms :: Maybe [Text]
+  , meronyms :: Maybe [Text]
+  } deriving (Show, Eq, Generic)
+
+instance ToJSON Relations
+instance FromJSON Relations
+
+-- Sense (meaning) of a lexeme
+data Sense = Sense
+  { sense_id :: Text
+  , lexeme_id :: Text
+  , definition :: Text
+  , gloss :: Maybe Text
+  , semantic_domain :: Maybe [Text]
+  , examples :: Maybe [Example]
+  , relations :: Maybe Relations
+  , usage_notes :: Maybe Text
+  } deriving (Show, Eq, Generic)
+
+instance ToJSON Sense where
+  toJSON (Sense sid lid def g sd exs rels notes) = object
+    [ "id" .= sid
+    , "lexeme_id" .= lid
+    , "definition" .= def
+    , "gloss" .= g
+    , "semantic_domain" .= sd
+    , "examples" .= exs
+    , "relations" .= rels
+    , "usage_notes" .= notes
+    ]
+
+instance FromJSON Sense where
+  parseJSON = withObject "Sense" $ \v -> Sense
+    <$> v .: "id"
+    <*> v .: "lexeme_id"
+    <*> v .: "definition"
+    <*> v .:? "gloss"
+    <*> v .:? "semantic_domain"
+    <*> v .:? "examples"
+    <*> v .:? "relations"
+    <*> v .:? "usage_notes"
