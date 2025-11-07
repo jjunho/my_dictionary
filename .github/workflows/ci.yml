@@ -65,13 +65,14 @@ jobs:
           fi
 
       - name: Backend linting (optional)
+        continue-on-error: true
         run: |
           if [ -d backend ]; then
             echo "Installing hlint and ormolu"
-            cabal v2-install hlint ormolu --installdir=$HOME/.local/bin --install-method=copy || true
+            cabal v2-install hlint ormolu --installdir=$HOME/.local/bin --install-method=copy
             export PATH=$HOME/.local/bin:$PATH
-            hlint backend/src || true
-            ormolu --mode check -r backend/src backend/app backend/test || true
+            hlint backend/src
+            ormolu --mode check -r backend/src backend/app backend/test
           else
             echo "No backend directory, skipping"
           fi
